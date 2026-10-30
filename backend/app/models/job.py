@@ -1,46 +1,53 @@
-from dataclasses import dataclass
-from datetime import datetime
-from enum import Enum
+
+from datetime import datetime, timezone
+from enum import Enum as JobEnum
+
+from sqlalchemy import DateTime, Enum, Index, String
+from sqlalchemy.orm import Mapped, mapped_column
+
+from app.db.session import Base
 
 
-class JobStates(str, Enum):
-    QUEUED = 'queued'
-    RUNNING = 'running'
-    PAUSED = 'paused'
-    SUCCEEDED = 'succeeded'
-    FAILED = 'failed'
+class JobStates(str, JobEnum):
+    QUEUED = "queued"
+    RUNNING = "running"
+    PAUSED = "paused"
+    SUCCEEDED = "succeeded"
+    FAILED = "failed"
 
 
-@dataclass
-class Job:
-    job_id: str
-    device_id: str
-    state: JobStates
-    created_time: datetime | None = None
+class JobModel(Base):
+    __tablename__ = "jobs"
 
-    allowed_state_transition = {
-        JobStates.QUEUED: {JobStates.RUNNING},
-        JobStates.RUNNING: {
-            JobStates.PAUSED,
-            JobStates.SUCCEEDED,
-            JobStates.FAILED,
-        },
-        JobStates.PAUSED: {JobStates.RUNNING},
-        JobStates.SUCCEEDED: set(),
-        JobStates.FAILED: set(),
-    }
+    __table_args__ = (
+        Index("ix_jobs_device_state", "device_id", "state"),
+    )
 
-    def __init__(self, device_id: str, job_id: str):
-        self.job_id = job_id
-        self.device_id = device_id
-        self.created_time = datetime.now()
-        self.state = JobStates.QUEUED
+    job_id: Mapped[str] = mapped_column(
+        String(64),
+        primary_key=True,
+    )
 
+    device_id: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+    )
 
-    def transition_to(self, new_state: JobStates):
-        if new_state not in self.allowed_state_transition[self.state]:
-            raise ValueError(f"Invalid state transition: {self.state} -> {new_state}")
+    state: Mapped[JobStates] = mapped_column(
+        Enum(JobStates, native_enum=False, length=20),
+        nullable=False,
+        default=JobStates.QUEUED,
+    )
 
-        print(f"{self.state} -> {new_state}")
-        self.state = new_state
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+    )
 
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )

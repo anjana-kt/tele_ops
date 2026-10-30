@@ -1,6 +1,8 @@
 from unittest import IsolatedAsyncioTestCase
-from job_state import Job, JobStates
-from utils.text_decorator import test_scenario
+
+from app.models.job_appstore import JobStates, Job
+from tests.helpers.scenario_decorator import test_scenario
+
 
 class TestJob(IsolatedAsyncioTestCase):
 

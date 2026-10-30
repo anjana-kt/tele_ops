@@ -1,6 +1,8 @@
 import asyncio
 import unittest
 
+from app.services.simulator import DeviceStatus, SimulatedDevice, TrackingDeviceSequential, TrackingDeviceOverlap
+
 
 class TestDeviceSimulator(unittest.IsolatedAsyncioTestCase):
     allowed_delta_Delay:float = 0.2
